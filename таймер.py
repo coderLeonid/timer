@@ -14,8 +14,11 @@ flag_of_position_one_second_entry_cursor = False
 flag_of_place_of_the_mouse_cursor = 0
 
 timer_window = Tk()
+width, height = 500, 250
+x, y = (timer_window.winfo_screenwidth() - width) // 2, (timer_window.winfo_screenheight() - height) // 2
+
 timer_window['bg'] = 'light yellow'
-timer_window.geometry('500x250+350+300')
+timer_window.geometry(f'{x}x{y}+{width}+{height}')
 timer_window.title('таймер')
 timer_window.iconbitmap('timer.ico')
 timer_window.resizable(width=False, height=False)
