@@ -1,0 +1,6 @@
+.idea
+dist
+_internal
+таймер.exe
+node_modules
+__pycache__
