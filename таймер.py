@@ -1,335 +1,190 @@
 import math
 from tkinter import *
 
-import pygame
+from pygame import mixer
 import time
-pygame.mixer.init()
+mixer.init()
+music = mixer.music
 
-is_limit_of_what = 'hours'
-timer_flag_clicked_enter = False
-timer_flag_paused = False
-flag_of_position_one_hour_entry_cursor = False
-flag_of_position_one_minute_entry_cursor = False
-flag_of_position_one_second_entry_cursor = False
-flag_of_place_of_the_mouse_cursor = 0
+key_m = (1, 5, 10, 30, 60)
+LY, Y, R, G = 'light yellow', 'yellow', 'red', '#00ff00'
 
-timer_window = Tk()
-timer_window['bg'] = 'light yellow'
-timer_window.geometry('500x250+350+300')
-timer_window.title('таймер')
-timer_window.iconbitmap('timer.ico')
-timer_window.resizable(width=False, height=False)
-timer_window.attributes('-topmost', True)
+win = Tk()
+win.title('таймер')
+win.iconbitmap('timer.ico')
+win['bg'] = LY
 
-entry_hours = Entry(timer_window, fg='red', bg='light yellow',
-                    font=('Arial', 70, 'bold'), borderwidth=2)
-entry_hours.place(x=35, y=30, width=120, height=80)
-entry_hours.focus_set()
-entry_minutes = Entry(timer_window, fg='red', bg='light yellow',
-                      font=('Arial', 70, 'bold'), borderwidth=2)
-entry_minutes.place(x=190, y=30, width=120, height=80)
-entry_seconds = Entry(timer_window, fg='red', bg='light yellow',
-                      font=('Arial', 70, 'bold'), borderwidth=2)
-entry_seconds.place(x=345, y=30, width=120, height=80)
-label_hours = Label(timer_window, fg='red', bg='light yellow',
-                    font=('Arial', 20, 'bold'), text='часы')
-label_hours.place(x=35, y=110, width=120, height=30)
-label_minutes = Label(timer_window, fg='red', bg='light yellow',
-                      font=('Arial', 20, 'bold'), text='минуты')
-label_minutes.place(x=190, y=110, width=120, height=30)
-label_seconds = Label(timer_window, fg='red', bg='light yellow',
-                      font=('Arial', 20, 'bold'), text='секунды')
-label_seconds.place(x=345, y=110, width=120, height=30)
-label_between_hours_and_minutes = Label(timer_window, fg='red', bg='light yellow',
-                                        font=('Arial', 70, 'bold'), text=':')
-label_between_hours_and_minutes.place(x=155, y=24, width=35, height=80)
-label_between_minutes_and_seconds = Label(timer_window, fg='red', bg='light yellow',
-                                          font=('Arial', 70, 'bold'), text=':')
-label_between_minutes_and_seconds.place(x=310, y=24, width=35, height=80)
+width, height = 422, 140
+x, y = (win.winfo_screenwidth() - width) // 2, (win.winfo_screenheight() - height) // 2 - 70
+win.geometry(f'{width}x{height}+{x}+{y}')
+win.resizable(width=False, height=False)
+win.attributes('-topmost', True)
+
+h, m, s = (Entry(win, fg=R, bg=LY, font=('Arial', 70, 'bold'), borderwidth=2) for i in range(3))
+t = (h, m, s)
+[t[i].place(x=10 + 145 * i, y=10, width=110, height=80) for i in range(3)]
+for i in range(2):
+    colon = Label(win, fg=R, bg=LY, font=('Arial', 70, 'bold'), text=':')
+    colon.place(x=120 + 146 * i, y=4, width=35, height=80)
+    
+m.focus_set()
+state = 'off'
 
 
-def focus_on_hours(self):
-    global is_limit_of_what, flag_of_place_of_the_mouse_cursor
-    global flag_of_position_one_hour_entry_cursor
-    is_limit_of_what = 'hours'
-    flag_of_place_of_the_mouse_cursor = 0
-    if entry_hours.index('insert') == 1:
-        flag_of_position_one_hour_entry_cursor = True
-
-
-def focus_on_minutes(self):
-    global is_limit_of_what, flag_of_place_of_the_mouse_cursor
-    global flag_of_position_one_minute_entry_cursor
-    is_limit_of_what = 'minutes'
-    flag_of_place_of_the_mouse_cursor = 1
-    if entry_minutes.index('insert') == 1:
-        flag_of_position_one_minute_entry_cursor = True
-
-
-def focus_on_seconds(self):
-    global is_limit_of_what, flag_of_place_of_the_mouse_cursor
-    global flag_of_position_one_second_entry_cursor
-    is_limit_of_what = 'seconds'
-    flag_of_place_of_the_mouse_cursor = 2
-    if entry_seconds.index('insert') == 1:
-        flag_of_position_one_second_entry_cursor = True
-
-
-def timer_limit(timer_keyboard):
-    global is_limit_of_what, flag_of_place_of_the_mouse_cursor, flag_of_position_one_hour_entry_cursor
-    global flag_of_position_one_minute_entry_cursor, flag_of_position_one_second_entry_cursor
-
-    if timer_keyboard.keysym in '0123456789':
-        if flag_of_place_of_the_mouse_cursor == 2:
-            if entry_seconds.index('insert') == 1:
-                flag_of_position_one_second_entry_cursor = True
-            else:
-                flag_of_position_one_second_entry_cursor = False
-        elif flag_of_place_of_the_mouse_cursor == 1:
-            if entry_minutes.index('insert') == 1:
-                flag_of_position_one_minute_entry_cursor = True
-            else:
-                flag_of_position_one_minute_entry_cursor = False
+def key(k):
+    global state
+    focus, key = win.focus_get(), k.keysym.lower()
+    if focus not in t:
+        return
+    if key in ' qwertyuiop':
+        key = str(' qwertyuiop'.find(key))[-1:]
+        focus.delete(focus.index(INSERT) - 1)
+        new = (t * 2)[t.index(focus) + 1]
+        new.focus_set()
+        new.icursor(len(new.get()))
+        focus = new
+        focus.insert(focus.index(INSERT), key)
+    if key in ('minus', 'space', 'colon', 'semicolon', 'period', 'comma', 'left', 'right'):
+        new = (t * 3)[t.index(focus) + 3 + (-1, 1)[key != 'left']]
+        new.focus_set()
+        new.icursor(len(new.get()))
+    elif key == 'backspace' and focus.index(INSERT) == 0 or key == 'delete' and focus.index(INSERT) == len(focus.get()):
+        new = (t * 3)[(t * 3).index(focus) + 3 + (-1, 1)[key == 'delete' and focus.index(INSERT) == len(focus.get())]]
+        if new.get():
+            new.focus_set()
+            new.icursor((len(new.get()), 0)[key == 'delete'])
+    elif key == 'grave':
+        if focus.get() in ('', '`'):
+            new = (t * 3)[(t * 3).index(focus) + 3 + (-1, 1)[1]]
+            new.delete(0, END)
+            new.focus_set()
+        focus.delete(0, END)
+    elif (key, state) == ('return', 'off'):
+        start()
+    elif focus.get().isdigit() and len(focus.get()) > 2:
+        if focus == h and len(m.get()) + len(s.get()) < 4 or focus == m and len(s.get()) < 2:
+            new = (m, s)[focus == m]
+            new.focus_set()
+            new.insert(0, focus.get()[-1:])
+            focus.delete(focus.index(END) - 1)
+        elif focus == m and len(h.get()) < 2 or focus == s and len(m.get()) < 2:
+            new = (m, h)[focus == m]
+            new.focus_set()
+            new.insert(END, focus.get()[:1])
+            focus.delete(0)
+        elif focus == s and len(m.get()) + len(h.get()) < 4:
+            focus.delete(focus.index(END) - 1)
+            (m, h)[len(m.get()) == 2].insert(END, s.get()[0])
         else:
-            if entry_hours.index('insert') == 1:
-                flag_of_position_one_hour_entry_cursor = True
-            else:
-                flag_of_position_one_hour_entry_cursor = False
-        if is_limit_of_what == 'hours' and (entry_hours.get() == '' or len(entry_hours.get()) > 2):
-            entry_hours.delete(entry_hours.index('insert') - 1)
-        if is_limit_of_what == 'minutes' and (entry_minutes.get() == '' or int(entry_minutes.get()) > 59 or
-                                              len(entry_minutes.get()) > 2):
-            entry_minutes.delete(entry_minutes.index('insert') - 1)
-        if is_limit_of_what == 'seconds' and (entry_seconds.get() == '' or int(entry_seconds.get()) > 59 or
-                                              len(entry_seconds.get()) > 2):
-            entry_seconds.delete(entry_seconds.index('insert') - 1)
-    elif timer_keyboard.keysym == 'BackSpace':
-        pass
-    elif timer_keyboard.keysym == 'Return':
-        if timer_flag_clicked_enter:
-            pass
-        else:
-            timer_start_tick()
-    elif timer_keyboard.keysym == 'Right':
-        if flag_of_place_of_the_mouse_cursor == 2:
-            if entry_seconds.index('insert') == 1:
-                flag_of_position_one_second_entry_cursor = True
-        elif flag_of_place_of_the_mouse_cursor == 1:
-            if entry_minutes.index('insert') == len(entry_minutes.get()):
-                if not flag_of_position_one_minute_entry_cursor:
-                    entry_seconds.focus_set()
-                    entry_seconds.icursor(0)
-                    flag_of_place_of_the_mouse_cursor = 2
-                else:
-                    flag_of_position_one_minute_entry_cursor = False
-            elif entry_minutes.index('insert') == 1:
-                flag_of_position_one_minute_entry_cursor = True
-            else:
-                flag_of_position_one_minute_entry_cursor = False
-        elif flag_of_place_of_the_mouse_cursor == 0:
-            if entry_hours.index('insert') == len(entry_hours.get()):
-                if not flag_of_position_one_hour_entry_cursor:
-                    entry_minutes.focus_set()
-                    entry_minutes.icursor(0)
-                    flag_of_place_of_the_mouse_cursor = 1
-                else:
-                    flag_of_position_one_hour_entry_cursor = False
-            elif entry_hours.index('insert') == 1:
-                flag_of_position_one_hour_entry_cursor = True
-            else:
-                flag_of_position_one_hour_entry_cursor = False
-        else:
-            pass
-    elif timer_keyboard.keysym == 'Left':
-        if flag_of_place_of_the_mouse_cursor == 0:
-            if entry_hours.index('insert') == 1:
-                flag_of_position_one_hour_entry_cursor = True
-        elif flag_of_place_of_the_mouse_cursor == 1:
-            if entry_minutes.index('insert') == 0:
-                if not flag_of_position_one_minute_entry_cursor:
-                    entry_hours.focus_set()
-                    entry_hours.icursor(2)
-                    flag_of_place_of_the_mouse_cursor = 0
-                else:
-                    flag_of_position_one_minute_entry_cursor = False
-            elif entry_minutes.index('insert') == 1:
-                flag_of_position_one_minute_entry_cursor = True
-            else:
-                flag_of_position_one_minute_entry_cursor = False
-        elif flag_of_place_of_the_mouse_cursor == 2:
-            if entry_seconds.index('insert') == 0:
-                if not flag_of_position_one_second_entry_cursor:
-                    entry_minutes.focus_set()
-                    entry_minutes.icursor(2)
-                    flag_of_place_of_the_mouse_cursor = 1
-                else:
-                    flag_of_position_one_second_entry_cursor = False
-            elif entry_seconds.index('insert') == 1:
-                flag_of_position_one_second_entry_cursor = True
-            else:
-                flag_of_position_one_second_entry_cursor = False
-        else:
-            pass
-    elif timer_keyboard.keysym == 'Up':
-        pass
-    else:
-        if is_limit_of_what == 'hours':
-            entry_hours.delete(entry_hours.index('insert') - 1)
-        if is_limit_of_what == 'minutes':
-            entry_minutes.delete(entry_minutes.index('insert') - 1)
-        if is_limit_of_what == 'seconds':
-            entry_seconds.delete(entry_seconds.index('insert') - 1)
+            focus.delete(focus.index(INSERT) - 1)
+            
+            
+    while not focus.get()[-1:].isdigit() and focus.get():
+        focus.delete(focus.index(END) - 1)
+    if key == 'space' and state in ('pause', 'on'):
+        pause()
+    elif key in 'hms':
+        print(True)
+        new = t['hms'.index(key)]
+        new.focus_set()
+        new.icursor(len(new.get()))
 
 
-entry_hours.bind('<FocusIn>', focus_on_hours)
-entry_minutes.bind('<FocusIn>', focus_on_minutes)
-entry_seconds.bind('<FocusIn>', focus_on_seconds)
-timer_window.bind('<Key>', timer_limit)
-
-
-def timer_tick():
-    global static_number_of_seconds, progress_bar_of_timer, time_ding_dong, number_of_seconds, timer_flag_paused
-    global starter_of_timer_ticking, stopper_of_timer, time_ding_dong
-    if timer_flag_paused:
-        timer_window.after(900, timer_tick)
-    elif number_of_seconds != time_ding_dong - int(time.time()):
-        if number_of_seconds >= 0:
-            if static_number_of_seconds == 0:
-                progress_bar_of_timer.configure(width=0)
+def tick():
+    global static_num_of_s, progress_bar, time_ding_dong, num_of_s, state, btn, stopper
+    if state == 'pause':
+        win.after(900, tick)
+    elif num_of_s != time_ding_dong - int(time.time()):
+        if num_of_s >= 0:
+            if static_num_of_s == 0:
+                progress_bar.config(width=0)
             else:
-                progress_bar_of_timer.configure(width=int(number_of_seconds / static_number_of_seconds * 400))
-            if static_number_of_seconds == 0 or number_of_seconds == 0:
-                progress_bar_of_timer.configure(bg='#ff0000')
-                percent_of_time_left.configure(fg='#ff0000')
+                progress_bar.config(width=int(num_of_s / static_num_of_s * 400))
+            if static_num_of_s == 0 or num_of_s == 0:
+                progress_bar.config(bg=R)
+                percent_of_time_left.config(fg=R)
                 percent_of_time_left.config(text='0%')
             else:
-                percent_of_time_left.config(text=str(int(
-                    math.ceil(number_of_seconds / static_number_of_seconds * 100))) + '%')
-                fraction_multiplied_512 = int(number_of_seconds / static_number_of_seconds * 512 - 1)
+                percent_of_time_left.config(text=str(int(math.ceil(num_of_s / static_num_of_s * 100))) + '%')
+                fraction_multiplied_512 = int(num_of_s / static_num_of_s * 512 - 1)
                 if fraction_multiplied_512 > 255:
-                    hex_color_code = '#' + '0' * (2 - len(hex(511 - fraction_multiplied_512)[2:])) + \
-                                     hex(511 - fraction_multiplied_512)[2:] + 'ff00'
-                    progress_bar_of_timer.configure(bg=hex_color_code)
-                    percent_of_time_left.configure(fg=hex_color_code)
+                    hex_color_code = '#' + '0' * (2 - len(hex(511 - fraction_multiplied_512)[2:])) + hex(511 - fraction_multiplied_512)[2:] + 'ff00'
                 elif fraction_multiplied_512 == 255:
-                    hex_color_code = '#ffff00'
-                    progress_bar_of_timer.configure(bg=hex_color_code)
-                    percent_of_time_left.configure(fg=hex_color_code)
+                    hex_color_code = Y
                 else:
-                    hex_color_code = '#' + 'ff' + '0' * (2 - len(hex(int(fraction_multiplied_512))[2:])) + \
-                                     hex(int(fraction_multiplied_512))[2:] + '00'
-                    progress_bar_of_timer.configure(bg=hex_color_code)
-                    percent_of_time_left.configure(fg=hex_color_code)
-            if number_of_seconds == 3602:
-                pygame.mixer.music.load("музыка окончания таймера/Остался 1 час.mp3")
-                pygame.mixer.music.play(1)
-            if number_of_seconds == 1802:
-                pygame.mixer.music.load("музыка окончания таймера/Осталось 30 минут.mp3")
-                pygame.mixer.music.play(1)
-            if number_of_seconds == 602:
-                pygame.mixer.music.load("музыка окончания таймера/Осталось 10 минут.mp3")
-                pygame.mixer.music.play(1)
-            if number_of_seconds == 302:
-                pygame.mixer.music.load("музыка окончания таймера/Осталось 5 минут.mp3")
-                pygame.mixer.music.play(1)
-            if number_of_seconds == 62:
-                pygame.mixer.music.load("музыка окончания таймера/Осталась 1 минута.mp3")
-                pygame.mixer.music.play(1)
-            entry_hours.delete(0, END)
-            entry_minutes.delete(0, END)
-            entry_seconds.delete(0, END)
-            entry_hours.insert(END, '0' * (2 - len(str(number_of_seconds // 3600))) + str(number_of_seconds // 3600))
-            entry_minutes.insert(END, '0' * (2 - len(str((number_of_seconds % 3600) // 60))) +
-                                 str((number_of_seconds % 3600) // 60))
-            entry_seconds.insert(END, '0' * (2 - len(str(number_of_seconds % 60))) + str(number_of_seconds % 60))
-            number_of_seconds = time_ding_dong - int(time.time())
-            timer_window.after(900, timer_tick)
-        elif number_of_seconds == -1:
-            timer_window.deiconify()
-            pygame.mixer.music.load("музыка окончания таймера/LindErebros-CloudsHeaven.mp3")
-            pygame.mixer.music.play(-1)
-            starter_of_timer_ticking = Button(timer_window, text='запустить таймер', fg='red', bg='light yellow',
-                                              font=('Arial', 16, 'bold'), command=timer_start_tick)
-            starter_of_timer_ticking.place(x=20, y=150, width=220, height=30)
-        else:
-            pass
+                    hex_color_code = '#' + 'ff' + '0' * (2 - len(hex(int(fraction_multiplied_512))[2:])) + hex(int(fraction_multiplied_512))[2:] + '00'
+                progress_bar.config(bg=hex_color_code)
+                percent_of_time_left.config(fg=hex_color_code)
+            if num_of_s in (60 * i + 2 for i in key_m):
+                music.load(f'звук/{num_of_s // 60}m.mp3')
+                music.play(1)
+            [i.delete(0, END) for i in (h, m, s)]
+            [t[i].insert(END, str((num_of_s // 3600, (num_of_s % 3600) // 60, num_of_s % 60)[i]).rjust(2, '0')) for i in range(3)]
+            num_of_s = time_ding_dong - int(time.time())
+            win.after(900, tick)
+        elif num_of_s == -1:
+            win.deiconify()
+            music.load("звук/LindErebros-CloudsHeaven.mp3")
+            music.play(-1)
+            btn.config(text='запустить')
+            btn.config(command=start)
     else:
-        timer_window.after(100, timer_tick)
+        win.after(100, tick)
 
 
-def pause_click():
-    global timer_flag_paused, pause_button_of_timer, unpause_button_of_timer, time_ding_dong, number_of_seconds
-    if not timer_flag_paused:
-        pause_button_of_timer.destroy()
-        unpause_button_of_timer = Button(timer_window, text='продолжить отсчёт', fg='red', bg='light yellow',
-                                         font=('Arial', 16, 'bold'), command=pause_click)
-        unpause_button_of_timer.place(x=20, y=150, width=220, height=30)
+def pause():
+    global state, time_ding_dong, num_of_s, btn
+    if state != 'pause':
+        btn.config(text='далее')
     else:
-        pause_button_of_timer = Button(timer_window, text='остановить таймер', fg='red', bg='light yellow',
-                                       font=('Arial', 16, 'bold'), command=pause_click)
-        pause_button_of_timer.place(x=20, y=150, width=220, height=30)
-        unpause_button_of_timer.destroy()
-        time_ding_dong = int(time.time()) + number_of_seconds
-    timer_flag_paused = not timer_flag_paused
+        btn.config(text='пауза')
+        time_ding_dong = int(time.time()) + num_of_s
+    state = ('on', 'pause')[state != 'pause']
 
 
-
-def timer_start_tick():
-    pygame.mixer.music.stop()
-    global entry_hours, entry_minutes, entry_seconds, starter_of_timer_ticking, stopper_of_timer
-    global time_ding_dong, number_of_seconds, static_number_of_seconds, pause_button_of_timer
-    global timer_flag_clicked_enter
-    stopper_of_timer = Button(timer_window, text='выключить таймер', fg='red', bg='light yellow',
-                              font=('Arial', 16, 'bold'), command=timer_stop_tick)
-    stopper_of_timer.place(x=260, y=150, width=220, height=30)
-    starter_of_timer_ticking.destroy()
-    pause_button_of_timer = Button(timer_window, text='остановить таймер', fg='red', bg='light yellow',
-                                   font=('Arial', 16, 'bold'), command=pause_click)
-    pause_button_of_timer.place(x=20, y=150, width=220, height=30)
-    timer_flag_clicked_enter = True
-    if entry_seconds.get() == '':
-        entry_seconds.insert(END, '0')
-    if entry_minutes.get() == '':
-        entry_minutes.insert(END, '0')
-    if entry_hours.get() == '':
-        entry_hours.insert(END, '0')
-    static_number_of_seconds = int(entry_hours.get()) * 3600 + int(entry_minutes.get()) * 60 + int(entry_seconds.get())
-    time_ding_dong = int(time.time()) + static_number_of_seconds
-    number_of_seconds = static_number_of_seconds
-    timer_tick()
+def start():
+    music.stop()
+    global btn, stopper, state, time_ding_dong, num_of_s, static_num_of_s
+    stopper = Button(win, text='сбросить', fg=R, bg=LY, font=('Arial', 16, 'bold'), command=stop)
+    stopper.place(x=140, y=100, width=120, height=30)
+    btn.config(text='пауза')
+    btn.config(command=pause)
+    state = 'on'
+    static_num_of_s = int(f'0{h.get()}') * 3600 + int(f'0{m.get()}') * 60 + int(f'0{s.get()}')
+    if static_num_of_s == 0:
+        static_num_of_s = 300
+    time_ding_dong = int(time.time()) + static_num_of_s
+    num_of_s = static_num_of_s
+    tick()
 
 
-def timer_stop_tick():
-    global number_of_seconds, timer_flag_clicked_enter, starter_of_timer_ticking, stopper_of_timer
-    global pause_button_of_timer, unpause_button_of_timer
-    timer_flag_clicked_enter = False
-    pygame.mixer.music.stop()
-    entry_seconds.delete(0, END)
-    entry_minutes.delete(0, END)
-    entry_hours.delete(0, END)
-    progress_bar_of_timer.configure(width=400, bg='#00ff00')
-    percent_of_time_left.config(text='100%', fg='#00ff00')
-    number_of_seconds = -2
-    starter_of_timer_ticking = Button(timer_window, text='запустить таймер', fg='red', bg='light yellow',
-                                      font=('Arial', 16, 'bold'), command=timer_start_tick)
-    starter_of_timer_ticking.place(x=20, y=150, width=220, height=30)
-    stopper_of_timer.destroy()
+def stop():
+    global num_of_s, state, btn, stopper
+    state = 'off'
+    music.stop()
+    [i.delete(0, END) for i in (h, m, s)]
+    progress_bar.config(width=400, bg=G)
+    percent_of_time_left.config(text='100%', fg=G)
+    num_of_s = -2
+    btn = Button(win, text='запустить', fg=R, bg=LY, font=('Arial', 16, 'bold'), command=start)
+    btn.place(x=10, y=100, width=120, height=30)
+    stopper.destroy()
+    m.focus_set()
 
 
-starter_of_timer_ticking = Button(timer_window, text='запустить таймер', fg='red', bg='light yellow',
-                                  font=('Arial', 16, 'bold'), command=timer_start_tick)
-starter_of_timer_ticking.place(x=20, y=150, width=220, height=30)
-progress_bar_of_timer = Label(timer_window, bg='#00ff00', font=('Arial', 1), text='', width=400)
-progress_bar_of_timer.place(x=80, y=200, height=30)
-left_border_of_progress_bar_of_timer = Label(bg='gray')
-left_border_of_progress_bar_of_timer.place(x=80, y=198, width=6, height=34)
-right_border_of_progress_bar_of_timer = Label(bg='gray')
-right_border_of_progress_bar_of_timer.place(x=480, y=198, width=6, height=34)
-up_border_of_progress_bar_of_timer = Label(bg='gray')
-up_border_of_progress_bar_of_timer.place(x=80, y=198, width=404, height=2)
-down_border_of_progress_bar_of_timer = Label(bg='gray')
-down_border_of_progress_bar_of_timer.place(x=80, y=230, width=404, height=2)
-percent_of_time_left = Label(bg='gray', text='100%', font=('Arial', 20, 'bold'), fg='#00ff00')
-percent_of_time_left.place(x=14, y=198, width=70, height=34)
+win.bind('<Key>', key)
+win.bind('<Escape>', lambda x: win.destroy())
 
-timer_window.mainloop()
+canvas = Canvas(win, width=420, height=50, bg=LY)
+canvas.place(x=380, y=198)
+canvas.create_rectangle(10, 10, 410, 40, outline='gray')
+
+btn = Button(win, text='запустить', fg=R, bg=LY, font=('Arial', 16, 'bold'), command=start)
+btn.place(x=10, y=100, width=120, height=30)
+progress_bar = Label(win, bg=G, font=('Arial', 1), text='', width=400)
+progress_bar.place(x=80, y=250, height=30)
+
+percent_of_time_left = Label(bg='gray', text='100%', font=('Arial', 20, 'bold'), fg=G)
+percent_of_time_left.place(x=270, y=100, width=70, height=30)
+
+win.mainloop()
