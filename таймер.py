@@ -1,5 +1,6 @@
 import math
 from tkinter import *
+import ctypes
 
 from pygame import mixer
 import time
@@ -36,15 +37,31 @@ def key(k):
     focus, key = win.focus_get(), k.keysym.lower()
     if focus not in t:
         return
-    if key in ' qwertyuiop':
-        key = str(' qwertyuiop'.find(key))[-1:]
+    
+    if k.keysym == '??':
+        ru_alph = 'йцукенгшщзфывапролдячсмить'
+        if k.char in ru_alph:
+            key = k.char.translate(str.maketrans(ru_alph, 'qwertyuiopasdfghjklzxcvbnm'))
+        elif k.char in 'бю.жэхъ':
+            key = ('comma', 'period', 'slash', 'semicolon', 'apostrophe', 'bracketleft', 'bracketright')['бю.жэхъ'.index(k.char)]
+
+    key_hacks = [''] + list('qwertyuiopasdfghjkl') + ['semicolon'] + list('zxcvbnm') + ['comma', 'period', 'slash']
+    # if key in 'backslash':
+    if key in key_hacks:
+        key_index = key_hacks.index(key)
+        key = str(key_index)[-1:]
+
         focus.delete(focus.index(INSERT) - 1)
-        new = (t * 2)[t.index(focus) + 1]
-        new.focus_set()
+        new = t[(key_index - 1) // 10]
         new.icursor(len(new.get()))
+        if len(new.get()) == 2:
+            new.delete(0, END)
         focus = new
-        focus.insert(focus.index(INSERT), key)
-    if key in ('minus', 'space', 'colon', 'semicolon', 'period', 'comma', 'left', 'right'):
+        focus.insert(focus.index(INSERT), key + '0' * (new == s and not new.get()))
+    elif key == 'equal' and (s_time := s.get())[-1:] in ('0', ''):
+        s.delete(0, END)
+        s.insert(END, s_time[:-1] + '5')
+    elif key in ('minus', 'space', 'colon', 'period', 'comma', 'left', 'right'):
         new = (t * 3)[t.index(focus) + 3 + (-1, 1)[key != 'left']]
         new.focus_set()
         new.icursor(len(new.get()))
@@ -59,8 +76,8 @@ def key(k):
             new.delete(0, END)
             new.focus_set()
         focus.delete(0, END)
-    elif (key, state) == ('return', 'off'):
-        start()
+    elif key == 'return' and state in ('on', 'off'):
+        (start, stop)[state == 'on']()
     elif focus.get().isdigit() and len(focus.get()) > 2:
         if focus == h and len(m.get()) + len(s.get()) < 4 or focus == m and len(s.get()) < 2:
             new = (m, s)[focus == m]
@@ -83,11 +100,12 @@ def key(k):
         focus.delete(focus.index(END) - 1)
     if key == 'space' and state in ('pause', 'on'):
         pause()
-    elif key in 'hms':
-        print(True)
-        new = t['hms'.index(key)]
-        new.focus_set()
-        new.icursor(len(new.get()))
+    # elif key in 'hms':
+    #     new = t['hms'.index(key)]
+    #     new.focus_set()
+    #     new.icursor(len(new.get()))
+    if k.keysym == '??':
+        return 'break'
 
 
 def tick():
